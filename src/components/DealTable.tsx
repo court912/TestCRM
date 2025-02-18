@@ -26,13 +26,13 @@ const DealTable = ({ deals, stageId }: DealTableProps) => {
   return (
     <div className="w-full">
       <div className="border-b">
-        <div className="flex px-4 py-3">
+        <div className="flex items-center gap-6 px-4 py-3">
           <div className="w-[40px]"></div>
           <div className="w-[300px] font-medium">Title</div>
-          <div className="w-[200px] font-medium">Company</div>
-          <div className="w-[150px] text-right font-medium">Deal Value</div>
-          <div className="w-[150px] font-medium">Stage</div>
-          <div className="w-[200px] font-medium">Location</div>
+          <div className="w-[250px] font-medium">Company</div>
+          <div className="w-[180px] text-right font-medium">Deal Value</div>
+          <div className="w-[180px] font-medium">Stage</div>
+          <div className="w-[180px] font-medium">Location</div>
         </div>
       </div>
       <div>
@@ -50,32 +50,34 @@ const DealTable = ({ deals, stageId }: DealTableProps) => {
                 onMouseEnter={() => setHoveredRow(deal.id)}
                 onMouseLeave={() => setHoveredRow(null)}
               >
-                <div className="w-[40px]">
-                  <div {...provided.dragHandleProps} className="cursor-grab">
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-6 w-full">
+                  <div className="w-[40px]">
+                    <div {...provided.dragHandleProps} className="cursor-grab">
+                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                    </div>
                   </div>
-                </div>
-                <div className="w-[300px] truncate">
-                  <Link to={`/deals/${deal.id}`} className="hover:underline">
-                    {deal.title}
-                  </Link>
-                </div>
-                <div className="w-[200px] truncate">{deal.company_name}</div>
-                <div className="w-[150px] text-right font-medium">
-                  {formatCurrency(deal.deal_value)}
-                </div>
-                <div className="w-[150px]">
-                  <div
-                    className={cn(
-                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                      "bg-blue-100 text-blue-800",
-                    )}
-                  >
-                    {deal.stage?.name || "No Stage"}
+                  <div className="w-[300px] truncate">
+                    <Link to={`/deals/${deal.id}`} className="hover:underline">
+                      {deal.title}
+                    </Link>
                   </div>
-                </div>
-                <div className="w-[200px] truncate">
-                  {deal.city}, {deal.state}
+                  <div className="w-[250px] truncate">{deal.company_name}</div>
+                  <div className="w-[180px] text-right font-medium">
+                    {formatCurrency(deal.deal_value)}
+                  </div>
+                  <div className="w-[180px]">
+                    <div
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                        "bg-blue-100 text-blue-800",
+                      )}
+                    >
+                      {deal.stage?.name || "No Stage"}
+                    </div>
+                  </div>
+                  <div className="w-[180px] truncate">
+                    {deal.city}, {deal.state}
+                  </div>
                 </div>
               </div>
             )}
