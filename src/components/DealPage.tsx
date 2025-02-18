@@ -862,7 +862,7 @@ const DealPage = () => {
           <aside className="fixed right-0 top-16 bottom-0 w-[400px] border-l bg-background flex flex-col">
             {/* Checklist Section - Fixed Height */}
             <div className="flex-none">
-              <Checklist />
+              <Checklist dealId={id || ""} />
             </div>
 
             {/* Activity Feed Section - Fills Remaining Space */}
