@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Checklist from "./Checklist";
 import ActivityFeed from "./ActivityFeed";
 import { cn } from "@/lib/utils";
@@ -51,6 +51,27 @@ const DealPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [deal, setDeal] = useState<Deal | null>(null);
+  const [stages, setStages] = useState<
+    Array<{ id: string; name: string; color_scheme: any }>
+  >([]);
+
+  useEffect(() => {
+    const fetchStages = async () => {
+      const { data, error } = await supabase
+        .from("deal_stages")
+        .select("*")
+        .order("display_order");
+
+      if (error) {
+        console.error("Error fetching stages:", error);
+        return;
+      }
+
+      setStages(data || []);
+    };
+
+    fetchStages();
+  }, []);
 
   useEffect(() => {
     const fetchDeal = async () => {
@@ -160,14 +181,17 @@ const DealPage = () => {
                   <div className="relative">
                     <select
                       className="h-9 rounded-md w-full pl-3 pr-8 text-sm border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring appearance-none"
-                      value={deal.status || "active"}
+                      value={deal.stage_id || ""}
                       onChange={(e) =>
-                        handleInputChange("status", e.target.value)
+                        handleInputChange("stage_id", e.target.value)
                       }
                     >
-                      <option value="active">Active</option>
-                      <option value="pending">Pending</option>
-                      <option value="completed">Completed</option>
+                      <option value="">Select Stage</option>
+                      {stages.map((stage) => (
+                        <option key={stage.id} value={stage.id}>
+                          {stage.name}
+                        </option>
+                      ))}
                     </select>
                     <div className="absolute right-2 top-2.5 pointer-events-none">
                       <svg
