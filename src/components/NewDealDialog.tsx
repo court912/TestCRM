@@ -58,6 +58,17 @@ export function NewDealDialog() {
     setIsLoading(true);
 
     try {
+      // Get the highest sort_order for the selected stage
+      const { data: stageDeals } = await supabase
+        .from("deals")
+        .select("sort_order")
+        .eq("stage_id", selectedStageId)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+
+      const highestOrder = stageDeals?.[0]?.sort_order || 0;
+      const newSortOrder = highestOrder + 1000;
+
       const { data, error } = await supabase
         .from("deals")
         .insert({
@@ -67,6 +78,7 @@ export function NewDealDialog() {
           deal_value: 0,
           due_date: new Date().toISOString(),
           stage_id: selectedStageId,
+          sort_order: newSortOrder,
         })
         .select()
         .single();
