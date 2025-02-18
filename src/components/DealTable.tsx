@@ -35,6 +35,8 @@ const formatCurrency = (value: number) => {
 };
 
 const DealTable = ({ deals: initialDeals, onReorder }: DealTableProps) => {
+  // Set a fixed total width for the table
+  const tableWidth = 1040; // 40 + 300 + 200 + 150 + 150 + 200 = 1040px
   const [deals, setDeals] = useState(initialDeals);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
@@ -101,19 +103,19 @@ const DealTable = ({ deals: initialDeals, onReorder }: DealTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[40px]"></TableHead>
-            <TableHead>
+            <TableHead className="w-[300px]">
               Title <SortButton column="title" />
             </TableHead>
-            <TableHead>
+            <TableHead className="w-[200px]">
               Company <SortButton column="company_name" />
             </TableHead>
-            <TableHead className="text-right">
+            <TableHead className="w-[150px] text-right">
               Deal Value <SortButton column="deal_value" />
             </TableHead>
-            <TableHead>
+            <TableHead className="w-[150px]">
               Stage <SortButton column="stage_id" />
             </TableHead>
-            <TableHead>
+            <TableHead className="w-[200px]">
               Location <SortButton column="city" />
             </TableHead>
           </TableRow>
@@ -143,7 +145,7 @@ const DealTable = ({ deals: initialDeals, onReorder }: DealTableProps) => {
                           <GripVertical className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[300px] truncate">
                         <Link
                           to={`/deals/${deal.id}`}
                           className="hover:underline"
@@ -151,11 +153,13 @@ const DealTable = ({ deals: initialDeals, onReorder }: DealTableProps) => {
                           {deal.title}
                         </Link>
                       </TableCell>
-                      <TableCell>{deal.company_name}</TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="w-[200px] truncate">
+                        {deal.company_name}
+                      </TableCell>
+                      <TableCell className="w-[150px] text-right font-medium">
                         {formatCurrency(deal.deal_value)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[150px]">
                         <div
                           className={cn(
                             "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
@@ -165,7 +169,7 @@ const DealTable = ({ deals: initialDeals, onReorder }: DealTableProps) => {
                           {deal.stage?.name || "No Stage"}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[200px] truncate">
                         {deal.city}, {deal.state}
                       </TableCell>
                     </TableRow>

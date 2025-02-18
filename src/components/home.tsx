@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import DealTable from "./DealTable";
+import Sidebar from "./Sidebar";
 import type { Database } from "@/types/supabase";
+import { cn } from "@/lib/utils";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
 type Stage = Database["public"]["Tables"]["deal_stages"]["Row"];
@@ -9,6 +11,17 @@ type Stage = Database["public"]["Tables"]["deal_stages"]["Row"];
 function Home() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem("sidebarCollapsed");
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      "sidebarCollapsed",
+      JSON.stringify(isSidebarCollapsed),
+    );
+  }, [isSidebarCollapsed]);
 
   useEffect(() => {
     const fetchStages = async () => {
@@ -86,31 +99,45 @@ function Home() {
   );
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Deals</h1>
-      </div>
-      <div className="space-y-8">
-        {stages.map((stage) => (
-          <div
-            key={stage.id}
-            className="rounded-md border bg-white overflow-hidden"
-          >
-            <div className="p-4 border-b bg-muted/30">
-              <h2 className="text-lg font-semibold">{stage.name}</h2>
-            </div>
-            {dealsByStage[stage.id]?.length > 0 ? (
-              <DealTable
-                deals={dealsByStage[stage.id]}
-                onReorder={handleReorder}
-              />
-            ) : (
-              <div className="p-4 text-center text-muted-foreground">
-                No deals in this stage
+    <div className="min-h-screen bg-background">
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
+      <div
+        className={cn(
+          "flex-1 transition-all duration-300",
+          isSidebarCollapsed ? "ml-[60px]" : "ml-[200px]",
+        )}
+      >
+        <header className="w-full h-16 border-b bg-background flex items-center px-4 fixed top-0 z-50">
+          <h1 className="text-xl font-semibold">Deals</h1>
+        </header>
+
+        <main className="pt-20 pb-8 px-4">
+          <div className="max-w-[1040px] mx-auto space-y-8">
+            {stages.map((stage) => (
+              <div
+                key={stage.id}
+                className="rounded-md border bg-white overflow-hidden"
+              >
+                <div className="p-4 border-b bg-muted/30">
+                  <h2 className="text-lg font-semibold">{stage.name}</h2>
+                </div>
+                {dealsByStage[stage.id]?.length > 0 ? (
+                  <DealTable
+                    deals={dealsByStage[stage.id]}
+                    onReorder={handleReorder}
+                  />
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No deals in this stage
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
-        ))}
+        </main>
       </div>
     </div>
   );
