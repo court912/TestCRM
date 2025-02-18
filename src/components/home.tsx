@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import DealTable from "./DealTable";
 import Sidebar from "./Sidebar";
+import { NewDealDialog } from "./NewDealDialog";
 import type { Database } from "@/types/supabase";
 import { cn } from "@/lib/utils";
 
@@ -100,21 +101,26 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Fixed Header */}
+      <header className="w-full h-16 border-b bg-background flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-50">
+        <h1 className="text-xl font-semibold">Deals</h1>
+        <NewDealDialog />
+      </header>
+
+      {/* Sidebar */}
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
+
+      {/* Main Content */}
       <div
         className={cn(
-          "flex-1 transition-all duration-300",
+          "pt-16 transition-all duration-300", // Added pt-16 to account for fixed header
           isSidebarCollapsed ? "ml-[60px]" : "ml-[200px]",
         )}
       >
-        <header className="w-full h-16 border-b bg-background flex items-center px-4 fixed top-0 z-50">
-          <h1 className="text-xl font-semibold">Deals</h1>
-        </header>
-
-        <main className="pt-20 pb-8 px-4">
+        <main className="p-8">
           <div className="max-w-[1040px] mx-auto space-y-8">
             {stages.map((stage) => (
               <div

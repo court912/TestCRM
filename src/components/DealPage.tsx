@@ -302,7 +302,8 @@ const DealPage = () => {
                           <div className="space-y-2">
                             <Label># of Operatories</Label>
                             <Input
-                              value={`${deal.num_ops || 0} (${deal.num_ops_details || ""})`}
+                              type="number"
+                              value={deal.num_ops || 0}
                               onChange={(e) =>
                                 handleInputChange(
                                   "num_ops",
