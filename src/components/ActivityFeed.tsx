@@ -1,116 +1,88 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollArea } from "./ui/scroll-area";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { MessageSquare } from "lucide-react";
-
-interface Comment {
-  id: string;
-  user: {
-    name: string;
-    avatar?: string;
-  };
-  content: string;
-  timestamp: string;
-}
+import { supabase } from "@/lib/supabase";
+import type { Database } from "@/types/supabase";
 
 interface ActivityFeedProps {
-  comments?: Comment[];
-  onAddComment?: (content: string) => void;
+  dealId: string;
 }
 
-const defaultComments: Comment[] = [
-  {
-    id: "1",
-    user: {
-      name: "John Doe",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=john",
-    },
-    content: "Updated deal value to $2.5M based on latest valuation",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-  },
-  {
-    id: "2",
-    user: {
-      name: "Sarah Smith",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=sarah",
-    },
-    content: "Scheduled meeting with stakeholders for next week",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-  {
-    id: "3",
-    user: {
-      name: "Mike Johnson",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=mike",
-    },
-    content:
-      "Completed initial due diligence review. All documents look good, proceeding with next steps.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-  },
-  {
-    id: "4",
-    user: {
-      name: "Emily Chen",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=emily",
-    },
-    content:
-      "Financial models updated with Q2 projections. EBITDA margins showing improvement.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-  },
-  {
-    id: "5",
-    user: {
-      name: "Alex Turner",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=alex",
-    },
-    content:
-      "Legal team review completed - all documents approved. Ready for final signatures.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(),
-  },
-  {
-    id: "6",
-    user: {
-      name: "Rachel Green",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=rachel",
-    },
-    content:
-      "Partner meeting scheduled for next month. Key stakeholders confirmed attendance.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(),
-  },
-  {
-    id: "7",
-    user: {
-      name: "David Kim",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=david",
-    },
-    content:
-      "Market analysis report submitted. Shows strong growth potential in target segments.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 144).toISOString(),
-  },
-  {
-    id: "8",
-    user: {
-      name: "Lisa Wong",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=lisa",
-    },
-    content:
-      "Updated compliance documentation. All regulatory requirements met.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 168).toISOString(),
-  },
-];
+type Activity = Database["public"]["Tables"]["activities"]["Row"];
 
-const ActivityFeed = ({
-  comments = defaultComments,
-  onAddComment = () => {},
-}: ActivityFeedProps) => {
+const ActivityFeed = ({ dealId }: ActivityFeedProps) => {
+  const [activities, setActivities] = useState<Activity[]>([]);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      const { data, error } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("deal_id", dealId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching activities:", error);
+        return;
+      }
+
+      setActivities(data || []);
+    };
+
+    fetchActivities();
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel("activities_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "activities",
+          filter: `deal_id=eq.${dealId}`,
+        },
+        (payload) => {
+          console.log("Change received!", payload);
+          fetchActivities();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [dealId]);
   const [newComment, setNewComment] = React.useState("");
+  const [activityType, setActivityType] = React.useState("comment");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
-    onAddComment(newComment);
+
+    const { error } = await supabase.from("activities").insert({
+      deal_id: dealId,
+      content: newComment,
+      type: activityType,
+      user_id: "3f189192-0a5f-4d7f-9495-753d63ad6659", // Hardcoded for now
+    });
+
+    if (error) {
+      console.error("Error adding comment:", error);
+      return;
+    }
+
+    // Refresh activities
+    const { data: newActivities } = await supabase
+      .from("activities")
+      .select("*")
+      .eq("deal_id", dealId)
+      .order("created_at", { ascending: false });
+
+    setActivities(newActivities || []);
     setNewComment("");
   };
 
@@ -140,52 +112,61 @@ const ActivityFeed = ({
         </h3>
       </div>
 
-      <ScrollArea className="flex-1 pb-[76px]">
+      <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
-          {comments
-            .sort(
-              (a, b) =>
-                new Date(b.timestamp).getTime() -
-                new Date(a.timestamp).getTime(),
-            )
-            .map((comment) => (
-              <div key={comment.id} className="flex gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={comment.user.avatar} />
-                  <AvatarFallback>
-                    {comment.user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{comment.user.name}</p>
-                    <span className="text-xs text-muted-foreground">
-                      {formatTimestamp(comment.timestamp)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {comment.content}
+          {activities.map((activity) => (
+            <div key={activity.id} className="flex gap-3">
+              <Avatar className="h-8 w-8">
+                <AvatarImage
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${activity.user_id}`}
+                />
+                <AvatarFallback>
+                  {activity.user_id?.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">
+                    User {activity.user_id?.slice(0, 6)}
                   </p>
+                  <span className="text-xs text-muted-foreground">
+                    {formatTimestamp(activity.created_at || "")}
+                  </span>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  {activity.content}
+                </p>
               </div>
-            ))}
+            </div>
+          ))}
         </div>
       </ScrollArea>
 
       <form onSubmit={handleSubmit} className="flex-none p-4 border-t bg-white">
-        <div className="flex gap-2">
+        <div className="space-y-2">
           <Input
             placeholder="Add a comment..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="flex-1"
           />
-          <Button type="submit" disabled={!newComment.trim()}>
-            Send
-          </Button>
+          <div className="flex gap-2">
+            <select
+              className="h-9 flex-1 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              value={activityType}
+              onChange={(e) => setActivityType(e.target.value)}
+            >
+              <option value="comment">Comment</option>
+              <option value="milestone">Milestone</option>
+              <option value="deal_update">Deal Update</option>
+              <option value="document">Document</option>
+              <option value="meeting">Meeting</option>
+              <option value="review">Review</option>
+              <option value="phone_call">Phone Call</option>
+            </select>
+            <Button type="submit" disabled={!newComment.trim()}>
+              Send
+            </Button>
+          </div>
         </div>
       </form>
     </div>

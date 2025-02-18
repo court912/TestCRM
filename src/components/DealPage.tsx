@@ -867,7 +867,7 @@ const DealPage = () => {
 
             {/* Activity Feed Section - Fills Remaining Space */}
             <div className="flex-1 overflow-hidden">
-              <ActivityFeed />
+              <ActivityFeed dealId={id || ""} />
             </div>
           </aside>
         </div>
