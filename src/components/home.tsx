@@ -1,50 +1,115 @@
-import { Link } from "react-router-dom";
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import DealTable from "./DealTable";
+import type { Database } from "@/types/supabase";
+
+type Deal = Database["public"]["Tables"]["deals"]["Row"];
+type Stage = Database["public"]["Tables"]["deal_stages"]["Row"];
 
 function Home() {
-  const [deals, setDeals] = useState<any[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [stages, setStages] = useState<Stage[]>([]);
 
   useEffect(() => {
+    const fetchStages = async () => {
+      const { data, error } = await supabase
+        .from("deal_stages")
+        .select("*")
+        .order("display_order");
+
+      if (error) {
+        console.error("Error fetching stages:", error);
+        return;
+      }
+
+      setStages(data || []);
+    };
+
+    fetchStages();
+  }, []);
+
+  useEffect(() => {
+    console.log("Fetching deals...");
     const fetchDeals = async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("*")
+        .select(
+          `
+          *,
+          stage:deal_stages(*)
+        `,
+        )
         .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching deals:", error);
         return;
       }
+      console.log("Deals fetched:", data);
 
       setDeals(data || []);
     };
 
     fetchDeals();
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel("deals_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "deals",
+        },
+        () => {
+          fetchDeals();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
+  const handleReorder = async (reorderedDeals: Deal[]) => {
+    setDeals(reorderedDeals);
+  };
+
+  const dealsByStage = stages.reduce(
+    (acc, stage) => {
+      acc[stage.id] = deals.filter((deal) => deal.stage_id === stage.id);
+      return acc;
+    },
+    {} as Record<string, Deal[]>,
+  );
+
   return (
-    <div className="w-screen h-screen bg-background p-8">
-      <h1 className="text-2xl font-bold mb-4">Deals</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {deals.map((deal) => (
-          <Link
-            key={deal.id}
-            to={`/deals/${deal.id}`}
-            className="block p-6 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Deals</h1>
+      </div>
+      <div className="space-y-8">
+        {stages.map((stage) => (
+          <div
+            key={stage.id}
+            className="rounded-md border bg-white overflow-hidden"
           >
-            <h2 className="text-lg font-semibold mb-2">{deal.title}</h2>
-            <p className="text-muted-foreground mb-2">{deal.company_name}</p>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">
-                ${deal.deal_value?.toLocaleString()}
-              </span>
-              <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded">
-                {deal.status || "Active"}
-              </span>
+            <div className="p-4 border-b bg-muted/30">
+              <h2 className="text-lg font-semibold">{stage.name}</h2>
             </div>
-          </Link>
+            {dealsByStage[stage.id]?.length > 0 ? (
+              <DealTable
+                deals={dealsByStage[stage.id]}
+                onReorder={handleReorder}
+              />
+            ) : (
+              <div className="p-4 text-center text-muted-foreground">
+                No deals in this stage
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>

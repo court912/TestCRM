@@ -539,11 +539,13 @@ const DealPage = () => {
                       <div className="space-y-2">
                         <Label>Cash at Close</Label>
                         <Input
-                          value={`${deal.cash_at_close || 0}%`}
+                          value={formatCurrency(deal.cash_at_close || 0)}
                           onChange={(e) =>
                             handleInputChange(
                               "cash_at_close",
-                              parseInt(e.target.value) || 0,
+                              parseFloat(
+                                e.target.value.replace(/[^0-9.-]+/g, ""),
+                              ) || 0,
                             )
                           }
                           className="bg-muted"
@@ -759,7 +761,7 @@ const DealPage = () => {
                       <div className="space-y-2">
                         <Label>NP Count</Label>
                         <Input
-                          value={`${deal.np_count || 0} (±${deal.avg_new_patients_per_month || 0} per month)`}
+                          value={deal.np_count || 0}
                           onChange={(e) =>
                             handleInputChange(
                               "np_count",
@@ -772,7 +774,7 @@ const DealPage = () => {
                       <div className="space-y-2">
                         <Label>Patient Count</Label>
                         <Input
-                          value={`${(deal.patient_count || 0).toLocaleString()} (${deal.active_patients || ""} active)`}
+                          value={(deal.patient_count || 0).toLocaleString()}
                           onChange={(e) =>
                             handleInputChange(
                               "patient_count",
